@@ -1,0 +1,23 @@
+
+
+  version: '3.8'
+
+  services:
+    mongo:
+      image: mongo
+      ports:
+        - "27016:27017"
+      networks:
+        - banner-network
+
+    app:
+      build: .
+      env_file: .env
+      networks:
+        - banner-network
+      depends_on:
+        - mongo
+
+  networks:
+    banner-network:
+      driver: bridge
