@@ -98,7 +98,7 @@ func getERC20Balance(client *ethclient.Client, tokenAddress common.Address, owne
 		return nil, err
 	}
 
-	// Вызываем функцию balanceOf с адресом владельца
+	
 	callData, err := parsedABI.Pack("balanceOf", ownerAddress)
 	if err != nil {
 		return nil, err
