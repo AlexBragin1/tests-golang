@@ -5,25 +5,20 @@ import (
 	"fmt"
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"test/internal/domain"
 )
 
 type GetStatsRequest struct {
-	BannerId string                `json:"banner_id" `
-	TsFrom   timestamppb.Timestamp `json:"ts_from"`
-	TsTo     timestamppb.Timestamp `json:"ts_to"`
-}
-type GetStatsResponse struct {
-	BannerId string    `json:"banner_id"`
+	BannerId string    `json:"banner_id" `
 	TsFrom   time.Time `json:"ts_from"`
 	TsTo     time.Time `json:"ts_to"`
-	Count    int64     `json:"count"`
+}
+type GetStatsResponse struct {
+	Stats []domain.Stat `json:"stats"`
 }
 
 type UpdateRequest struct {
-	BannerId string `json:"banner_id" `
+	ID string `json:"id" bson:"_id"`
 }
 
 type UpdateResponse struct{}
@@ -41,36 +36,20 @@ func (d SaveRequest) Validaty() error {
 	return nil
 }
 func (d UpdateRequest) Validaty() error {
-	if d.BannerId == "" {
+	if d.ID == "" {
 		return errors.New("banner_id is required")
 	}
 
 	return nil
 }
-func NewGetStatsResponse(bannerID string, tsFrom timestamppb.Timestamp, tsTo timestamppb.Timestamp, clicks []domain.Click) GetStatsResponse {
-	return GetStatsResponse{
-		BannerId: bannerID,
-		TsFrom:   tsFrom.AsTime(),
-		TsTo:     tsTo.AsTime(),
-		Count:    int64(len(clicks)),
-	}
-}
 
 func (d GetStatsRequest) Validaty() error {
-	if d.TsFrom.IsValid() {
+	if d.TsFrom.IsZero() {
 		return fmt.Errorf("must provide timestamp")
 	}
-	if d.TsTo.IsValid() {
+	if d.TsTo.IsZero() {
 		return fmt.Errorf("must provide timestamp")
 	}
-	tsFrom := time.Date(2023, time.October, 10, 10, 0, 0, 0, time.UTC)
-	tsTo := time.Date(2023, time.October, 10, 10, 1, 0, 0, time.UTC)
 
-	if !tsFrom.IsZero() {
-		duration := tsTo.Sub(tsFrom)
-		if duration != time.Minute {
-			errors.New("difference between tsFrom and tsTo not equal one minute")
-		}
-	}
 	return nil
 }

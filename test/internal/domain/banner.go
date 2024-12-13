@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"time"
 )
 
 type Banner struct {
@@ -11,12 +11,13 @@ type Banner struct {
 }
 
 type Click struct {
-	CreatedAt timestamp.Timestamp `json:"created_at" bson:"created_at"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
 
 func NewBanner(title string) *Banner {
 	return &Banner{
-		ID:    NewUUID(),
-		Title: title,
+		ID:     NewID(),
+		Title:  title,
+		Clicks: []Click{},
 	}
 }

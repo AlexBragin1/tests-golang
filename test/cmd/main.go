@@ -34,8 +34,8 @@ func main() {
 	clickService := service.NewClickService(clickRepo)
 	clickController := controller.NewClickController(clickService)
 
-	r.GET("/counter/:bannerID", clickController.Update)
-	r.POST("/stats/:bannerID", clickController.GetStats)
+	r.GET("/counter/:id", clickController.Update)
+	r.POST("/stats/:id", clickController.GetStats)
 	r.POST("/save", clickController.Save)
 	slog.Info("Strat Server")
 	if err := r.Run(":8081"); err != nil {

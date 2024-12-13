@@ -23,7 +23,7 @@ func NewClickController(service ClickService) *ClickController {
 
 func (c *ClickController) Update(ctx *gin.Context) {
 	request := dto.UpdateRequest{}
-	request.BannerId = ctx.Param("bannerID")
+	request.ID = ctx.Param("id")
 	_, err := c.service.Update(request)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -34,7 +34,7 @@ func (c *ClickController) Update(ctx *gin.Context) {
 
 func (c *ClickController) GetStats(ctx *gin.Context) {
 	request := dto.GetStatsRequest{}
-	request.BannerId = ctx.Param("bannerID")
+	request.BannerId = ctx.Param("id")
 
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})

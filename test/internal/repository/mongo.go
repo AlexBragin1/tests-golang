@@ -2,10 +2,11 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"test/internal/domain"
 )
@@ -20,31 +21,78 @@ func NewClickRepository(db *mongo.Database) *ClickRepository {
 	}
 }
 
-func (r *ClickRepository) Update(bannerID string) error {
+func (r *ClickRepository) Update(bannerID string, click domain.Click) error {
 	_, err := r.collection.UpdateOne(context.TODO(),
 		bson.M{"_id": bannerID},
-		bson.M{"$push": bson.M{"clicks": domain.Click{CreatedAt: *timestamppb.Now()}}})
+		bson.M{"$push": bson.M{"clicks": click}})
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (r *ClickRepository) GetStats(bannerID string, tsFrom, tsTo timestamppb.Timestamp) ([]domain.Click, error) {
-	var stats []domain.Click
-
-	cursor, err := r.collection.Find(context.Background(),
-		bson.M{"banner_id": bannerID, "create_at": bson.M{"$gte": tsFrom, "$lte": tsTo}})
+func (r *ClickRepository) GetStats(bannerID string, tsFrom, tsTo time.Time) ([]domain.Stat, error) {
+	pipeline := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"_id": bannerID,
+				"clicks.created_at": bson.M{
+					"$gte": tsFrom,
+					"$lt":  tsTo,
+				},
+			},
+		}},
+		{{
+			"$unwind", "$clicks",
+		}},
+		{{
+			"$match", bson.M{
+				"clicks.created_at": bson.M{
+					"$gte": tsFrom,
+					"$lt":  tsTo,
+				},
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"$dateTrunc": bson.M{
+						"date": "$clicks.created_at",
+						"unit": "minute",
+					},
+				},
+				"count": bson.M{"$sum": 1},
+			},
+		}},
+		{{
+			"$sort", bson.M{"_id": 1},
+		}},
+	}
+	cursor, err := r.collection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(context.TODO())
 
-	for cursor.Next(context.TODO()) {
-		var stat domain.Click
+	var result struct {
+		Interval time.Time `bson:"_id"`
+		Count    int       `bson:"count"`
+	}
 
-		if err = cursor.Decode(&stat); err != nil {
-			return nil, err
+	var stats []domain.Stat
+
+	for cursor.Next(context.TODO()) {
+
+		if err := cursor.Decode(&result); err != nil {
+			continue
 		}
-		stats = append(stats, stat)
+		ts := primitive.NewDateTimeFromTime(result.Interval)
+		stats = append(stats, domain.Stat{
+			Ts: ts,
+			V:  result.Count,
+		})
 	}
 
 	return stats, nil

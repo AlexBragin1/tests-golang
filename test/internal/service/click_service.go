@@ -1,16 +1,16 @@
 package service
 
 import (
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"time"
 
 	"test/internal/domain"
 	"test/internal/dto"
 )
 
 type ClickRepo interface {
-	GetStats(string, timestamppb.Timestamp, timestamppb.Timestamp) ([]domain.Click, error)
+	GetStats(string, time.Time, time.Time) ([]domain.Stat, error)
 	Save(banner domain.Banner) error
-	Update(string) error
+	Update(string, domain.Click) error
 }
 
 type ClickService struct {
@@ -26,15 +26,12 @@ func (s *ClickService) GetStats(req dto.GetStatsRequest) (*dto.GetStatsResponse,
 		return nil, err
 	}
 
-	clicks, err := s.clickRepo.GetStats(req.BannerId, req.TsFrom, req.TsTo)
+	stats, err := s.clickRepo.GetStats(req.BannerId, req.TsFrom, req.TsTo)
 	if err != nil {
-		return &dto.GetStatsResponse{}, err
+		return &dto.GetStatsResponse{Stats: stats}, err
 	}
 
-	resp := dto.GetStatsResponse{}
-	resp = dto.NewGetStatsResponse(req.BannerId, req.TsFrom, req.TsTo, clicks)
-
-	return &resp, nil
+	return &dto.GetStatsResponse{Stats: stats}, err
 }
 
 func (s *ClickService) Save(request dto.SaveRequest) (*dto.SaveResponse, error) {
@@ -47,10 +44,9 @@ func (s *ClickService) Save(request dto.SaveRequest) (*dto.SaveResponse, error) 
 }
 
 func (s *ClickService) Update(request dto.UpdateRequest) (*dto.UpdateResponse, error) {
-	if err := request.Validaty(); err != nil {
-		return &dto.UpdateResponse{}, err
-	}
-	if err := s.clickRepo.Update(request.BannerId); err != nil {
+	click := domain.Click{CreatedAt: time.Now()}
+
+	if err := s.clickRepo.Update(request.ID, click); err != nil {
 		return &dto.UpdateResponse{}, err
 	}
 
